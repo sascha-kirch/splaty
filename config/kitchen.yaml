@@ -1,0 +1,38 @@
+defaults:
+  - _self_
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled
+
+stage: means # options: means, circles, circles_sh, circles_alpha_blending, splats_alpha_blending, splats_transmittance, splats_tiled
+save_gif: false
+
+dataset:
+  name: kitchen
+  path_gsplat_ckpt: data/360_v2/kitchen/gsplat_result_3dgs/ckpts/ckpt_29999_rank0.pt
+  path_gt_image: data/360_v2/kitchen/images/DSCF0656.JPG
+
+camera:
+  fx: 3231.5814007282897
+  fy: 3240.8079303073573
+  cx: 1557.5
+  cy: 1039
+  width: 3115
+  height: 2078
+  scale: 1
+  near_plane: 0.3
+  far_plane: inf
+  q_world_to_cam: [0.88253036034885812, -0.13577322541282349, -0.40936959454237748, -0.1874095232044593]
+  t_world_to_cam: [0.747852111589277, -2.1887432598651739, 3.334180290752860]
+  normalization_transform: [
+      [-0.004630333466 , 0.143509216642, -0.203356808025, 0.079630171208],
+      [0.248862754201 , -0.000621296187, -0.006104930935, 0.039128988078],
+      [-0.004026934650 , -0.203408567541, -0.143454052113, 0.591894724399],
+      [0.000000000000 , 0.000000000000, 0.000000000000, 1.000000000000],
+    ]
+
+hydra:
+  run:
+    dir: ./outputs/${dataset.name}/${stage}_scale-${camera.scale}_${now:%Y-%m-%d-%H-%M-%S}
+  job_logging:
+    root:
+      handlers: []

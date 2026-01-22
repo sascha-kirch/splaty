@@ -1,0 +1,15 @@
+diff --git a/examples/simple_trainer.py b/examples/simple_trainer.py
+index 6a30be7..14f1dcc 100644
+--- a/examples/simple_trainer.py
++++ b/examples/simple_trainer.py
+@@ -337,6 +337,10 @@ class Runner:
+             normalize=cfg.normalize_world_space,
+             test_every=cfg.test_every,
+         )
++
++        if world_rank == 0:
++            np.savetxt(os.path.join(cfg.result_dir, 'transform.txt'),self.parser.transform, delimiter=",", fmt="[%.12f , %.12f, %.12f, %.12f],")
++
+         self.trainset = Dataset(
+             self.parser,
+             split="train",

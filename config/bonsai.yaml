@@ -1,0 +1,38 @@
+defaults:
+  - _self_
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled
+
+stage: means # options: means, circles, circles_sh, circles_alpha_blending, splats_alpha_blending, splats_transmittance, splats_tiled
+save_gif: true
+
+dataset:
+  name: bonsai
+  path_gsplat_ckpt: data/360_v2/bonsai/gsplat_result_3dgs/ckpts/ckpt_29999_rank0.pt
+  path_gt_image: data/360_v2/bonsai/images/DSCF5566.JPG
+
+camera:
+  fx: 3222.7010797592447
+  fy: 3222.7010797592447
+  cx: 1559
+  cy: 1039
+  width: 3118
+  height: 2078
+  scale: 1
+  near_plane: 0.6
+  far_plane: inf
+  q_world_to_cam: [0.83221362484384165, -0.20818601625691907, -0.4401010827687441, -0.26531133071379853]
+  t_world_to_cam: [0.32420362733324715, -2.176845446490268, 3.543041572108569]
+  normalization_transform: [
+        [-0.22406653, 0.03548638, 0.09994217, -0.34101015],
+        [0.07023507, -0.12538843, 0.20198591, -0.23787704],
+        [0.07946543, 0.21088383, 0.10328013, -0.61396302],
+        [0.0, 0.0, 0.0, 1.0],
+    ]
+
+hydra:
+  run:
+    dir: ./outputs/${dataset.name}/${stage}_scale-${camera.scale}_${now:%Y-%m-%d-%H-%M-%S}
+  job_logging:
+    root:
+      handlers: []

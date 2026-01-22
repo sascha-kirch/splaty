@@ -1,0 +1,38 @@
+defaults:
+  - _self_
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled
+
+stage: means # options: means, circles, circles_sh, circles_alpha_blending, splats_alpha_blending, splats_transmittance, splats_tiled
+save_gif: false
+
+dataset:
+  name: bicycle
+  path_gsplat_ckpt: data/360_v2/bicycle/gsplat_result_3dgs/ckpts/ckpt_6999_rank0.pt
+  path_gt_image: data/360_v2/bicycle/images/_DSC8679.JPG
+
+camera:
+  fx: 4649.5059777438473
+  fy: 4627.3003725463414
+  cx: 2473
+  cy: 1643
+  width: 4946
+  height: 3286
+  scale: 1
+  near_plane: 0.3
+  far_plane: inf
+  q_world_to_cam: [0.9015232185173202, -0.071399717394061007, -0.42328970786259285, -0.05462407937733455]
+  t_world_to_cam: [0.0027671256602392891, -1.1024391297161953, 3.8377925032777762]
+  normalization_transform: [
+      [0.053651597562 , 0.074003183715, -0.245306064265, 0.045140938196],
+      [0.256129777966 , -0.022342024088, 0.049278809695, -0.182789748700],
+      [-0.007005226930 , -0.250108762433, -0.076984180427, 0.348640677194],
+      [0.000000000000 , 0.000000000000, 0.000000000000, 1.000000000000],
+    ]
+
+hydra:
+  run:
+    dir: ./outputs/${dataset.name}/${stage}_scale-${camera.scale}_${now:%Y-%m-%d-%H-%M-%S}
+  job_logging:
+    root:
+      handlers: []

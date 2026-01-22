@@ -1,0 +1,194 @@
+[project]
+authors = [{name = "Sascha Kirch", email = "saschakirch130993@gmail.com"}]
+name = "splaty"
+requires-python = ">= 3.13"
+version = "0.1.0"
+dependencies = ["hydra-core>=1.3.2,<2"]
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+extend-exclude = ["gsplat","tests","test","__init__.py", "*.ipynb"]
+
+[tool.ruff.lint]
+extend-select = ["W", "C90", "YTT", "ANN", "ASYNC", "A", "C4", "RET", "SIM", "PLC", "PLE", "PLR", "PLW", "FLY", "PERF", "RUF","ARG","ERA","TRY","NPY","FURB", "B","PYI","PT","Q","RET", "ICN","FIX","SLF","PIE","FBT","BLE","S","TCH"]
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+select = [
+    "F", # pylfakes
+    "E", # Error
+    "I", # Isort
+    "D", # pydocstyle
+    "PL", # Pylint
+    "N" # Pep8 - Naming
+    ]
+ignore = ["E402","E501", "B905", "SIM300","FBT001","FBT002","D100", "ANN401", "SIM117","D105","N812","F722"]
+fixable = ["W", "C90", "YTT", "ANN", "ASYNC", "A", "C4", "RET", "PLC", "PLE", "PLR", "PLW", "FLY", "PERF", "RUF", "F401", "D205", "D403", "D200", "D202", "D209","I001","E711","Q","Q002","PT"]
+unfixable = ["SIM"]
+future-annotations = true
+
+[tool.ruff.lint.isort]
+force-single-line = true
+force-sort-within-sections = false
+lines-after-imports = 2
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+known-third-party = [
+    "numpy",
+    "pandas",
+    "keras",
+    "tensorflow",
+    "sklearn",
+    "matplotlib",
+    "scipy",
+    "tqdm"
+]
+known-first-party = []
+known-local-folder = []
+
+[tool.ruff.lint.mccabe]
+max-complexity = 8
+
+[tool.ruff.lint.pycodestyle]
+ignore-overlong-task-comments = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+ignore-fully-untyped = false
+mypy-init-return = true
+
+[tool.ruff.lint.pylint]
+max-branches = 8
+max-returns = 3
+max-statements = 30
+max-args = 10
+allow-magic-value-types = ["str", "bytes", "complex", "float", "int"]
+
+[tool.ruff.lint.pep8-naming]
+ignore-names = ["xxx"]
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = true
+mark-parentheses = true
+parametrize-names-type = "tuple"
+parametrize-values-row-type = "tuple"
+parametrize-values-type = "list"
+
+[tool.ruff.format]
+skip-magic-trailing-comma = false
+quote-style = "double"
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[tool.pixi.pypi-dependencies]
+splaty = { path = ".", editable = true }
+
+[tool.pixi.dependencies]
+numpy = ">=2.4.0,<3"
+ruff = ">=0.14.10,<0.15"
+pytorch = ">=2.9.1,<3"
+jaxtyping = ">=0.3.4,<0.4"
+rich = ">=14.2.0,<15"
+torchvision = ">=0.24.1,<0.25"
+matplotlib = ">=3.10.8,<4"
+scipy = ">=1.16.3,<2"
+
+[tool.pixi.feature.gsplat.dependencies]
+python = "==3.10.0"
+colmap = "*"
+cuda-toolkit = "12.1.*" # Must match PyTorch CUDA version (2.3.1+cu121)
+pip = "*"
+ninja = "*"
+libxcrypt = ">=4.4.36,<5"
+
+[tool.pixi.feature.gsplat.pypi-dependencies]
+numpy = {version = ">=1.26.1,<2"}
+torch = { version = "==2.3.1", index = "https://download.pytorch.org/whl/cu121" }
+# ninja = {version = "*"}
+imageio = {version = ">=2.37.2,<3", extras = ["ffmpeg"]}
+torchmetrics = {version = "*", extras = ["image"]}
+scikit-learn = {version = "*"}
+tqdm = {version = "*"}
+tyro = {version = ">=0.8.8"}
+viser = {version = "*"}
+Pillow = {version = "*"}
+tensorboard = {version = "*"}
+tensorly = {version = "*"}
+matplotlib = {version = "*"}
+splines = {version = "*"}
+PyYAML = {version = "*"}
+opencv-python = {version = "*"}
+nvidia-ml-py = "*"
+pycolmap = {git = "https://github.com/rmbrualla/pycolmap" , rev = "cc7ea4b7301720ac29287dbe450952511b32125e"}
+nerfview = {git = "https://github.com/nerfstudio-project/nerfview" , rev = "4538024fe0d15fd1a0e4d760f3695fc44ca72787"}
+
+[tool.pixi.environments]
+gsplat = { features = ["gsplat"], no-default-feature = true }
+
+[tool.pixi.feature.gsplat.tasks]
+
+# ============================
+# Setup and Data Download
+# ============================
+_gsplat-patch = { cmd = "git apply ../patches/gsplat_transform_dump.patch 2> /dev/null || echo 'patch already applied'", cwd= "gsplat"}
+gsplat-setup = {depends-on = [{task = "_gsplat-patch"}] , cmd = "pip install --no-build-isolation ./gsplat git+https://github.com/rahul-goel/fused-ssim@328dc9836f513d00c4b5bc38fe30478b4435cbb5 git+https://github.com/harry7557558/fused-bilagrid@90f9788e57d3545e3a033c1038bb9986549632fe", env = { NVCC_APPEND_FLAGS = "-w" } }
+gsplat-download-data = { cmd = "python gsplat/examples/datasets/download_dataset.py" }
+
+# ============================
+# Training 3D Gaussian Splatting tasks
+# ============================
+_gsplat-3dgs = { cmd = "python gsplat/examples/simple_trainer.py default --data_dir data/{{ data }}/ --data_factor {{ factor }} --result_dir data/{{ data }}/gsplat_result_3dgs", args = ["data", "factor"]}
+
+3dgs-bonsai = { depends-on = [{ task = "_gsplat-3dgs", args = ["360_v2/bonsai", "4"]}]}
+3dgs-bicycle = { depends-on = [{ task = "_gsplat-3dgs", args = ["360_v2/bicycle", "4"]}]}
+3dgs-kitchen = { depends-on = [{ task = "_gsplat-3dgs", args = ["360_v2/kitchen", "4"]}]}
+
+3dgs-logo = { cmd =" python gsplat/examples/image_fitting.py --img_path media/splaty_logo.png --save_imgs --num_points 200000 --iterations 3000 --model_type 3dgs"}
+
+# ============================
+# Visualization Tasks
+# ============================
+_gsplat-viser-3dgs = { cmd = "python gsplat/examples/simple_viewer.py --ckpt data/{{ data }}/gsplat_result_3dgs/ckpts/{{ ckpt }} --output_dir data/{{ data }}/gsplat_result_3dgs", args = ["data", "ckpt"]}
+
+visualize-bonsai = { depends-on = [{ task = "_gsplat-viser-3dgs", args = ["360_v2/bonsai", "ckpt_29999_rank0.pt"]}]}
+visualize-bicycle = { depends-on = [{ task = "_gsplat-viser-3dgs", args = ["360_v2/bicycle", "ckpt_29999_rank0.pt"]}]}
+visualize-kitchen = { depends-on = [{ task = "_gsplat-viser-3dgs", args = ["360_v2/kitchen", "ckpt_29999_rank0.pt"]}]}
+
+# ============================
+# Prepare Render Tasks
+# ============================
+_colmap-convert-bin = { cmd = "colmap model_converter --input_path data/{{ data }}/sparse/0 --output_path data/{{ data }}/sparse --output_type txt", args = ["data"]}
+
+colmap-convert-bonsai = { depends-on = [{ task = "_colmap-convert-bin", args = ["360_v2/bonsai"]}]}
+colmap-convert-bicycle = { depends-on = [{ task = "_colmap-convert-bin", args = ["360_v2/bicycle"]}]}
+colmap-convert-kitchen = { depends-on = [{ task = "_colmap-convert-bin", args = ["360_v2/kitchen"]}]}
+
+[tool.pixi.tasks]
+render-debug = {cmd = "python render_debug_images.py"}
+
+render-means-full = {cmd = "python render_image.py camera.scale=1 stage=means"}
+render-circles-full = {cmd = "python render_image.py camera.scale=1 stage=circles"}
+render-circles-sh-full = {cmd = "python render_image.py camera.scale=1 stage=circles_sh"}
+render-circles-alpha-full = {cmd = "python render_image.py camera.scale=1 stage=circles_alpha_blending"}
+render-splats-alpha-full = {cmd = "python render_image.py camera.scale=1 stage=splats_alpha_blending"}
+render-splats-transmittance-full = {cmd = "python render_image.py camera.scale=1 stage=splats_transmittance"}
+render-splats-tiled-full = {cmd = "python render_image.py camera.scale=1 stage=splats_tiled"}
+
+render-means-quarter = {cmd = "python render_image.py camera.scale=4 stage=means"}
+render-circles-quarter = {cmd = "python render_image.py camera.scale=4 stage=circles"}
+render-circles-sh-quarter = {cmd = "python render_image.py camera.scale=4 stage=circles_sh"}
+render-circles-alpha-quarter = {cmd = "python render_image.py camera.scale=4 stage=circles_alpha_blending"}
+render-splats-alpha-quarter = {cmd = "python render_image.py camera.scale=4 stage=splats_alpha_blending"}
+render-splats-transmittance-quarter = {cmd = "python render_image.py camera.scale=4 stage=splats_transmittance"}
+render-splats-tiled-quarter = {cmd = "python render_image.py camera.scale=4 stage=splats_tiled"}
+
+format = {cmd = "ruff format"}
+check = {cmd = "ruff check --fix -q -e --output-format grouped && ruff check --statistics -q"}
+style = [{task = "format"}, {task = "check"}]
