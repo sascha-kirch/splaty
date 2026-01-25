@@ -14,7 +14,7 @@ This repository is the official companion to my Medium series on building a 3D G
 
 | Part | Title | Link |
 |------|-------|------|
-| **Part 1** | I Built the Slowest 3D Gaussian Splatting Renderer... On Purpose | 🔜 coming soon |
+| **Part 1** | I Built the Slowest 3D Gaussian Splatting Renderer... On Purpose | [Blog Post](https://medium.com/ai-advances/i-built-the-slowest-3d-gaussian-splatting-renderer-on-purpose-a8170b90d9b4?sk=0a2c1a32a01f0cfb3c9050f7c045483f) |
 | **Part 2** | Circles Are Not Gaussians (But Let's Pretend They Are) | 🔜 coming soon |
 | **Part 3** | Splat Your Own Gaussians: Covariance, Ellipses, and Real 2D Projection | 🔜 coming soon |
 | **Part 4** | The Tricks That Make Production 3DGS Fast (Even If Ours Isn't) | 🔜 coming soon |
