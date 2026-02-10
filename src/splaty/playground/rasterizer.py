@@ -46,7 +46,7 @@ def _opacity_falloff_gaussians(
     # I also want to have the fall-off
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    sigmas = [0.1 * i for i in range(0, int(k**2 * 10) + 1)]
+    sigmas = [0.1 * i for i in range(int(k**2 * 10) + 1)]
     alphas = []
     for s in sigmas:
         if s <= k**2:
@@ -218,15 +218,15 @@ def _debug_circle() -> UInt8[Tensor, "3 H W"]:
     rendered_image = (color * 255).to(torch.uint8)
     return rendered_image
 
-
-def _debug_gaussian(
-    with_fall_off: bool = True,
+def _debug_gaussian_small(
+    with_fall_off: bool = False,
     with_checkerboard: bool = False,
     draw_bbox: bool = True,
     radius_simple: bool = True,
     use_conics: bool = True,
+    color_sigmas:bool = True,
 ) -> UInt8[Tensor, "3 H W"]:
-    H, W = 600, 600
+    H, W = 10, 12
 
     # create checkerboard background
     bg_color = torch.tensor([50, 50, 50], dtype=torch.float32) / 255.0
@@ -238,7 +238,147 @@ def _debug_gaussian(
         bg_color_light = torch.tensor([200, 200, 200], dtype=torch.float32) / 255.0
         for u in range(H):
             for v in range(W):
-                if ((u // 100) + (v // 100)) % 2 == 0:
+                if ((u // 2) + (v // 2)) % 2 == 0:
+                    bg[:, u, v] = bg_color_light
+
+    gaussians = {
+        "gaussian1": {
+            "center": (4.5, 6.5),
+            "sigma":3.0,
+            # "sigma": 3.33,
+            "color": torch.tensor([1.0, 0.0, 0.0]),
+            "opacity": 0.99,
+            "covariance2d": torch.tensor([[1.0, -0.5], [-0.5, 1.0]]),
+            # "covariance2d": torch.tensor([[4.0, 0.0], [0.0, 1.0]]),
+        },
+    }
+
+    color: Float32[Tensor, "3 H W"] = torch.zeros((3, H, W), dtype=torch.float32)
+    alpha: Float32[Tensor, "H W"] = torch.zeros((H, W), dtype=torch.float32)
+
+    for gaussian in gaussians.values():
+        sigma = gaussian["sigma"]
+        base_color_gaussian = gaussian["color"]
+        opacity_gaussian = torch.tensor(gaussian["opacity"])
+        v, u = gaussian["center"]
+        covariance2d: Tensor = gaussian["covariance2d"]
+
+        if use_conics:
+            # To avoid sub-pixel gaussians with non-invertible covariance matrices, add a small value to the diagonal.
+            # 0.3 as in gsplat, because sqrt(0.3)[variance] ~= 0.5477 pixels [sigma], which is about half a pixel.
+            covariance2d = covariance2d #+ 0.3 * torch.eye(2)
+            a = covariance2d[0, 0]
+            b = (covariance2d[0, 1] + covariance2d[1, 0]) / 2
+            c = covariance2d[1, 1]
+
+            det = a * c - b * b
+            if det <= 0:
+                print(f"Warning: non-invertible covariance matrix detected: {covariance2d}, det: {det:.6f}")
+                continue
+            det = det.clamp(min=1e-10)
+            conics = torch.stack(
+                [
+                    c / det,
+                    -b / det,
+                    a / det,
+                ]
+            )
+        else:
+            covariance2d_inv = torch.linalg.inv(covariance2d)
+
+        if radius_simple:
+            # Simple radius based on axis-aligned bounding box of covariance ellipse. Its over estimate, but faster
+            # than computing eigenvalues, and also non-square box which means fewer pixels to check.
+            radius_u = sigma * math.sqrt(covariance2d[0, 0])
+            radius_v = sigma * math.sqrt(covariance2d[1, 1])
+
+            u_min = math.floor(u - radius_u)
+            u_max = math.ceil(u + radius_u)
+            v_min = math.floor(v - radius_v)
+            v_max = math.ceil(v + radius_v)
+        else:
+            eigenvalues, _ = torch.linalg.eigh(covariance2d)
+
+            radius = sigma * torch.sqrt(torch.max(eigenvalues))
+
+            u_min = math.floor(u - radius)
+            u_max = math.ceil(u + radius)
+            v_min = math.floor(v - radius)
+            v_max = math.ceil(v + radius)
+
+        # iterate over a square region around the projected mean
+        for u_pix in range(u_min, u_max):
+            for v_pix in range(v_min, v_max):
+                # Only write pixel if it's within image bounds
+                if 0 <= u_pix < W and 0 <= v_pix < H:
+                    du = u_pix + 0.5 - u
+                    dv = v_pix + 0.5 - v
+
+                    if use_conics:
+                        dist_sq = conics[0] * du * du + 2 * conics[1] * du * dv + conics[2] * dv * dv
+                    else:
+                        offset_from_mean = torch.tensor([du, dv], dtype=torch.float32)
+
+                        # Mahalanobis distance, no transpose needed since offset_from_mean is a 1D tensor, not column vector
+                        dist_sq = offset_from_mean @ covariance2d_inv @ offset_from_mean
+
+                    # Only draw pixel if it's within the circle
+                    if dist_sq <= sigma * sigma:  # squared distance, no need to compute sqrt.
+                        if with_fall_off:
+                            weight = math.exp(-0.5 * dist_sq)
+                            alpha_gaussian = opacity_gaussian * weight
+                        else:
+                            alpha_gaussian = opacity_gaussian
+
+                        if color_sigmas:
+                            if dist_sq > 3.0 ** 2:
+                                color_gaussian = base_color_gaussian / 4 * alpha_gaussian
+                            elif dist_sq > 2.0 ** 2:
+                                color_gaussian = base_color_gaussian / 3 * alpha_gaussian
+                            elif dist_sq > 1.0 ** 2:
+                                color_gaussian = base_color_gaussian / 2 * alpha_gaussian
+                            else:
+                                color_gaussian = base_color_gaussian * alpha_gaussian
+                        else:
+                            color_gaussian = base_color_gaussian * alpha_gaussian
+
+                        # read current alpha and color
+                        alpha_pixel = alpha[v_pix, u_pix]
+                        color_pixel = color[:, v_pix, u_pix]
+
+                        # compute new alpha and color
+                        alpha[v_pix, u_pix] = alpha_gaussian + alpha_pixel * (1 - alpha_gaussian)
+                        color[:, v_pix, u_pix] = color_gaussian + color_pixel * (1 - alpha_gaussian)
+                    elif draw_bbox:
+                        color[:, v_pix, u_pix] = bbox_color
+
+    color += bg * (1 - alpha)[None, :, :]
+    rendered_image = (color * 255).to(torch.uint8)
+    return rendered_image
+
+
+def _debug_gaussian(
+    with_fall_off: bool = False,
+    with_checkerboard: bool = False,
+    draw_bbox: bool = False,
+    radius_simple: bool = True,
+    use_conics: bool = True,
+    color_sigmas:bool = True,
+    base_opacity: float = 0.7,
+) -> UInt8[Tensor, "3 H W"]:
+    H, W = 600, 600
+
+    # create checkerboard background
+    bg_color = torch.tensor([50, 50, 50], dtype=torch.float32) / 255.0
+    bg: Float32[Tensor, "3 H W"] = bg_color[:, None, None].expand(3, H, W).clone()
+
+    bbox_color = torch.tensor([0, 0, 200], dtype=torch.float32) / 255.0
+
+    if with_checkerboard:
+        bg_color_light = torch.tensor([65,65,65], dtype=torch.float32) / 255.0
+        for u in range(H):
+            for v in range(W):
+                if ((u // 50) + (v // 50)) % 2 == 0:
                     bg[:, u, v] = bg_color_light
 
     gaussians = {
@@ -249,45 +389,59 @@ def _debug_gaussian(
         #     "opacity": 0.99,
         #     "covariance2d": torch.tensor([[32.2982, 1.9657], [1.9657, 0.1196]], dtype=torch.float64),
         # },
+        # "gaussian": {
+        #     "center": (100.0, 200.0),
+        #     "sigma": 3.33,
+        #     "color": torch.tensor([1.0, 0.0, 0.0]),
+        #     "opacity": 0.7,
+        #     "covariance2d": torch.tensor([[2500.0, 0.0], [0.0, 625.0]]),
+        # },
+        # "gaussian0": {
+        #     "center": (400.0, 400.0),
+        #     "sigma": 3.33,
+        #     "color": torch.tensor([0.0, 1.0, 0.0]),
+        #     "opacity": 0.7,
+        #     "covariance2d": torch.tensor([[2500.0, -1600.0], [-1600.0, 2500.0]]),
+        # },
         "gaussian1": {
             "center": (300.0, 300.0),
             "sigma": 3.33,
-            "color": torch.tensor([1.0, 0.0, 0.0]),
-            "opacity": 0.99,
+            "color": torch.tensor([240, 140, 0]) / 255,
+            "opacity": base_opacity,
             "covariance2d": torch.tensor([[1830.0, 800.0], [800.0, 1430.0]]),
         },
-        # "gaussian2": {
-        #     "center": (200.0, 200.0),
-        #     "sigma": 3.0,
-        #     "color": torch.tensor([0.0, 1.0, 1.0]),
-        #     "opacity": 0.99,
-        #     "covariance2d": torch.tensor([[1830.0, -800.0], [-800.0, 1430.0]]),
-        # },
-        # "gaussian3": {
-        #     "center": (400.0, 200.0),
-        #     "sigma": 3.0,
-        #     "color": torch.tensor([1.0, 1.0, 0.0]),
-        #     "opacity": 0.99,
-        #     "covariance2d": torch.tensor([[1830.0, 800.0], [800.0, 1430.0]]),
-        # },
-        # "gaussian4": {
-        #     "center": (200.0, 400.0),
-        #     "sigma": 3.0,
-        #     "color": torch.tensor([1.0, 0.0, 1.0]),
-        #     "opacity": 0.99,
-        #     "covariance2d": torch.tensor([[1830.0, 800.0], [800.0, 1430.0]]),
-        # },
-        # "gaussian5": {
-        #     "center": (400.0, 400.0),
-        #     "sigma": 3.0,
-        #     "color": torch.tensor([0.0, 0.0, 1.0]),
-        #     "opacity": 0.99,
-        #     "covariance2d": torch.tensor([[1830.0, -800.0], [-800.0, 1430.0]]),
-        # },
+        "gaussian2": {
+            "center": (200.0, 200.0),
+            "sigma": 3.0,
+            "color": torch.tensor([47, 158, 68]) / 255,
+            "opacity": base_opacity,
+            "covariance2d": torch.tensor([[1830.0, -800.0], [-800.0, 1430.0]]),
+        },
+        "gaussian3": {
+            "center": (400.0, 200.0),
+            "sigma": 3.0,
+            "color": torch.tensor([25, 113, 194]) / 255,
+            "opacity": base_opacity,
+            "covariance2d": torch.tensor([[1830.0, 800.0], [800.0, 1430.0]]),
+        },
+        "gaussian4": {
+            "center": (200.0, 400.0),
+            "sigma": 3.0,
+            "color": torch.tensor([224, 49, 49]) / 255,
+            "opacity": base_opacity,
+            "covariance2d": torch.tensor([[1830.0, 800.0], [800.0, 1430.0]]),
+        },
+        "gaussian5": {
+            "center": (400.0, 400.0),
+            "sigma": 3.0,
+            "color": torch.tensor([156, 54, 181]) / 255,
+            "opacity": base_opacity,
+            "covariance2d": torch.tensor([[1830.0, -800.0], [-800.0, 1430.0]]),
+        },
         # "gaussian6": {
         #     "center": (300.0, 300.0),
         #     "sigma": 3.0,
-        #     "color": torch.tensor([0.0, 1.0, 0.0]),
+        #     "color": torch.tensor([12, 133, 153]) / 255,
         #     "opacity": 0.7,
         #     "covariance2d": torch.tensor([[1830.0, -800.0], [-800.0, 430.0]]),
         # },
@@ -370,7 +524,21 @@ def _debug_gaussian(
                         else:
                             alpha_gaussian = opacity_gaussian
 
-                        color_gaussian = base_color_gaussian * alpha_gaussian
+
+
+                        if color_sigmas:
+                            if dist_sq > 3.0 ** 2:
+                                color_gaussian = base_color_gaussian / 4 * alpha_gaussian
+                            elif dist_sq > 2.0 ** 2:
+                                color_gaussian = base_color_gaussian / 3 * alpha_gaussian
+                            elif dist_sq > 1.0 ** 2:
+                                color_gaussian = base_color_gaussian / 2 * alpha_gaussian
+                            else:
+                                color_gaussian = base_color_gaussian * alpha_gaussian
+                        else:
+                            color_gaussian = base_color_gaussian * alpha_gaussian
+
+                        # print(f"Pixel ({u_pix}, {v_pix}): dist_sq={dist_sq:.2f}, alpha_gaussian={alpha_gaussian:.4f}, color_gaussian={color_gaussian}")
 
                         # read current alpha and color
                         alpha_pixel = alpha[v_pix, u_pix]
@@ -381,6 +549,7 @@ def _debug_gaussian(
                         color[:, v_pix, u_pix] = color_gaussian + color_pixel * (1 - alpha_gaussian)
                     elif draw_bbox:
                         color[:, v_pix, u_pix] = bbox_color
+                        alpha[v_pix, u_pix] = 0.5
 
     color += bg * (1 - alpha)[None, :, :]
     rendered_image = (color * 255).to(torch.uint8)
