@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from rich.console import Console
 from torchvision.io import write_png
 
-from splaty.playground.rasterizer import _debug_3_circles_alpha_blending
+from splaty.playground.rasterizer import _debug_3_circles_alpha_blending, _debug_gaussian_small
 from splaty.playground.rasterizer import _debug_circle
 from splaty.playground.rasterizer import _debug_gaussian
 from splaty.playground.rasterizer import _opacity_falloff_circles
@@ -52,6 +52,11 @@ def main() -> None:
     console.log("Rendering gaussians...")
     rendered_image = _debug_gaussian()
     write_png(rendered_image, save_path / "gaussians.png")
+
+    console.log("Rendering gaussians...")
+    rendered_image = _debug_gaussian_small()
+    write_png(rendered_image, save_path / "gaussians_small.png")
+
 
 
 if __name__ == "__main__":
