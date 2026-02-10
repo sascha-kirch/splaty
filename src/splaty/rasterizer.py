@@ -83,7 +83,7 @@ def render_splats_tiled(
         means_image,
         cull_image_bounds=False,
         cull_near_far_planes=True,
-        fov_margin_ratio=0.0,
+        fov_margin_ratio=0.3,
     )
 
     gs, means_cam, means_image = sort_gaussians_by_depth_of_means(

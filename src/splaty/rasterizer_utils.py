@@ -339,6 +339,21 @@ def assign_gaussians_to_tiles(
     image_width: int,
     image_height: int,
 ) -> dict[tuple[int, int], list[int]]:
+    """ Assign Gaussians to image tiles based on their axis-aligned bounding boxes.
+
+    Important: This is not how it is done in 3DGS, which needs to deal with GPU constraints and performance optimizations.
+    Here we do a simple CPU-based assignment for clarity and simplicity.
+
+    Args:
+        axis_aligned_bounding_boxes: Axis-aligned bounding boxes for each Gaussian in the format (u_min, v_min, u_max, v_max).
+        tile_size: Size of each tile (assumed square).
+        image_width: Width of the image.
+        image_height: Height of the image.
+
+    Returns:
+        dict[tuple[int, int], list[int]]: A dictionary mapping tile coordinates (tile_u, tile_v) to lists of Gaussian
+            indices that overlap with each tile.
+    """
     N = axis_aligned_bounding_boxes.shape[0]
 
     tiles_u = math.ceil(image_width / tile_size)
