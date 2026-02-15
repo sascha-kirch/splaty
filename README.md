@@ -17,7 +17,7 @@ This repository is the official companion to my Medium series on building a 3D G
 | **Part 1** | I Built the Slowest 3D Gaussian Splatting Renderer... On Purpose | [Blog Post](https://medium.com/ai-advances/i-built-the-slowest-3d-gaussian-splatting-renderer-on-purpose-a8170b90d9b4?sk=0a2c1a32a01f0cfb3c9050f7c045483f) |
 | **Part 2** | Circles Are Not Gaussians (But Let's Pretend They Are) |  [Blog Post](https://medium.com/ai-advances/circles-are-not-gaussians-but-lets-pretend-they-are-7bcf6db6efb8?sk=a4a27e16d71f4c1742b8ec6f45550673) |
 | **Part 3** | Splat Your Own Gaussians: Covariance, Ellipses, and Real 2D Projection | [Blog Post](https://medium.com/ai-advances/splat-your-own-gaussians-from-circles-to-ellipses-96b69f1e7e3f?sk=cc15df35d8dfbb381eae69a1f44db4f7) |
-| **Part 4** | The Tricks That Make Production 3DGS Fast (Even If Ours Isn't) | 🔜 coming soon |
+| **Part 4** | The Tricks That Make Production 3DGS Fast (Even If Ours Isn't) | [Blog Post](https://medium.com/ai-advances/the-tricks-that-make-production-3dgs-fast-even-if-ours-isnt-6cd9928ec307?sk=0342cf93adb6faf269fd6ecf973915cb) |
 
 Each blog post walks through the theory and implementation details for one stage of the renderer. The code here implements everything discussed in the series.
 
@@ -98,8 +98,8 @@ The repository implements six progressive stages of rendering. Use these pre-con
 | **Stage 3**<br>Circles with spherical harmonics <br> ![circles-sh](media/circles_sh.gif) | `pixi run render-circles-sh-full` | [Part 2](https://medium.com/ai-advances/circles-are-not-gaussians-but-lets-pretend-they-are-7bcf6db6efb8?sk=a4a27e16d71f4c1742b8ec6f45550673) |
 | **Stage 4**<br>Circles with SH and alpha blending <br> ![circles-alpha](media/circles_alpha.gif) | `pixi run render-circles-alpha-full` | [Part 2](https://medium.com/ai-advances/circles-are-not-gaussians-but-lets-pretend-they-are-7bcf6db6efb8?sk=a4a27e16d71f4c1742b8ec6f45550673) |
 | **Stage 5**<br>Gaussian splats with full rendering <br> ![splats](media/splats_alpha.gif) | `pixi run render-splats-alpha-quarter` | [Part 3](https://medium.com/ai-advances/splat-your-own-gaussians-from-circles-to-ellipses-96b69f1e7e3f?sk=cc15df35d8dfbb381eae69a1f44db4f7) |
-| **Stage 6a**<br>Splats with transmittance/conics <br> ![splats](media/splats_transmittance.gif) | `pixi run render-splats-transmittance-quarter` | 🔜 Part 4: coming soon |
-| **Stage 6b**<br>Splats with tiling (very slow!) <br> ![splats](media/splats_tiled.gif) | `pixi run render-splats-tiled-quarter` | 🔜 Part 4: coming soon |
+| **Stage 6a**<br>Splats with transmittance/conics <br> ![splats](media/splats_transmittance.gif) | `pixi run render-splats-transmittance-quarter` | [Part 4](https://medium.com/ai-advances/the-tricks-that-make-production-3dgs-fast-even-if-ours-isnt-6cd9928ec307?sk=0342cf93adb6faf269fd6ecf973915cb) |
+| **Stage 6b**<br>Splats with tiling (very slow!) <br> ![splats](media/splats_tiled.gif) | `pixi run render-splats-tiled-quarter` | [Part 4](https://medium.com/ai-advances/the-tricks-that-make-production-3dgs-fast-even-if-ours-isnt-6cd9928ec307?sk=0342cf93adb6faf269fd6ecf973915cb) |
 
 > [!WARNING]
 > When I said this renderer is slow, I meant it! Stages 5-6 can take several hours depending on how many gaussians the scene has and in which resolution you want to render at. Grab a coffee and watch the progress.
