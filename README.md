@@ -18,6 +18,7 @@ This repository is the official companion to my Medium series on building a 3D G
 | **Part 2** | Circles Are Not Gaussians (But Let's Pretend They Are) |  [Blog Post](https://medium.com/ai-advances/circles-are-not-gaussians-but-lets-pretend-they-are-7bcf6db6efb8?sk=a4a27e16d71f4c1742b8ec6f45550673) |
 | **Part 3** | Splat Your Own Gaussians: Covariance, Ellipses, and Real 2D Projection | [Blog Post](https://medium.com/ai-advances/splat-your-own-gaussians-from-circles-to-ellipses-96b69f1e7e3f?sk=cc15df35d8dfbb381eae69a1f44db4f7) |
 | **Part 4** | The Tricks That Make Production 3DGS Fast (Even If Ours Isn't) | [Blog Post](https://medium.com/ai-advances/the-tricks-that-make-production-3dgs-fast-even-if-ours-isnt-6cd9928ec307?sk=0342cf93adb6faf269fd6ecf973915cb) |
+| **Bonus**  | Inside the CUDA Kernel: The GPU Implementation of 3D Gaussian Splatting | [Blog Post](https://medium.com/ai-advances/inside-the-cuda-kernel-the-gpu-implementation-of-3d-gaussian-splatting-74c3261ed721?sk=e59e2f0f8ff732e09e33b1169ee6d619) |
 
 Each blog post walks through the theory and implementation details for one stage of the renderer. The code here implements everything discussed in the series.
 
